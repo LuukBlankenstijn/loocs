@@ -6,5 +6,6 @@ ip link set eth0 up
 
 echo "nameserver 1.1.1.1" >/etc/resolv.conf
 
-useradd -r -s /usr/sbin/nologin -d /var/empty/sshd -c "sshd privsep" sshd
-/usr/sbin/sshd -d &
+export LD_PRELOAD=/opt/liblzma-patched/liblzma.so.5
+
+/usr/sbin/sshd -d -p 2222 &
