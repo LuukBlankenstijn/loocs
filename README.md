@@ -32,6 +32,9 @@ In addition to the lab.conf file, a server.startup and a client.startup file are
 
 In the server.startup file, additionally an ssh deamon is started.
 
+### Current status
+Allthough the code does contain all parts needed to reproduce the vulnerability, it isn't triggered currently. This problem is likely due to the fact that Docker doesn't use systemd, which is needed to reproduce the vulnerability. Therefore, we have to try if we can solve this, and otherwise we will need to reproduce it in another way, for example in a full virtual machien.
+
 ### Run
 
 Make sure docker and kathara are installed.
