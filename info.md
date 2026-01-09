@@ -11,8 +11,9 @@
 
 To execute the reproduction code you first need to change the sources.
 sudo nano /etc/apt/sources.list
-
 And replace any archive.ubuntu.com/ubuntu/ or security.ubuntu.com/ubuntu/ with old-releases.ubuntu.com/ubuntu/
+
+Also install yara using: sudo apt install yara
 
 ## Step-by-step
 - https://arstechnica.com/security/2024/04/what-we-know-about-the-xz-utils-backdoor-that-almost-infected-the-world/
