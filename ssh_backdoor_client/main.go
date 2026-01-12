@@ -113,7 +113,7 @@ func main() {
 	}
 
 	config := &ssh.ClientConfig{
-		User: "luuk",
+		User: *user,
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(xz),
 		},
