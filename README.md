@@ -4,17 +4,12 @@ This repository aims to show how the [XZ utils backdoor](https://en.wikipedia.or
 
 ## The attack
 
-The way the original attack worked was by overriding a signature of a method another library. Because the compromised library would be loaded earlier, this method would be called instead of the original. In this method there was a check for a specific pattern in the key. If this specific key was not found it would just call the original method and stay undetected. However if the pattern was detected in the key, it would decode the key, retrieving the payload. It would then execute this payload as a command. Since this part of sshd runs as root, this allowed for unlimited access on the victim machine.
+The way the original attack worked was by overriding a signature of a method another library. This was done by changing its address in the Global Offset Table, causing it to be called instead of the original. In this method there was a check for a specific pattern in the key. If this specific key was not found it would just call the original method and behave normally. However if the pattern was detected in the key, it would decode the key, retrieving the payload. It would then execute this payload as a command. Since this part of sshd runs as root, this allowed for root access on the victim machine.
 
 In this demo we don't override the method by modifying on of the dependencies of sshd, but instead forcing it to load our own library. This library will then override the `RSA_set0_key` method from the openssl library. The sshd process will the call our method instead of the original, and the attack will be executed. To allow our attack to be stealthy and only trigger for the attacker, we create a modified RSA key. This RSA key has a modulus that is impossible to exist in a valid RSA key. This way it only triggers for us, since nobody else will use a invalid key.
 
 ## RSA key
-
-todo
-
-<!---
-TODO: find out how the RSA key works with the magic bit and stuff. I did this mostly with AI and with the xz_bot repo so im not sure how that exactly goes
--->
+For an explanation on how the payload is encoded into the RSA key, please see the report.
 
 ## The demo
 
